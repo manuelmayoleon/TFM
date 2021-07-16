@@ -1,0 +1,13 @@
+int_2d.f90 para obtener la distribución inicial de velocidades (Maxwelliana).
+
+En primer lugar hay que compilar el modulo. Para ello hay que poner en la terminar: gfortan int_2d.f90 -c
+
+Proseguimos compilando el programa principal: gfortran final_version.f90 int_2d.f90 -o loquesea.exe
+
+Te saca las temperaturas en cada eje (x,y) en el archivo temperaturas.txt. Luego te saca las velocidades y las posiciones en velocidad.txt y pos.txt 	
+
+
+
+gfortran -g -fcheck=all -Wall tuprograma.f90 para chequear el problema
+
+En mi caso: gfortran -g -fcheck=all -Wall collision_2d_granular.f90 int_2d.f90 -o p.exe

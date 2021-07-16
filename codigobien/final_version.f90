@@ -14,6 +14,7 @@ implicit none
     REAL(kind=8),ALLOCATABLE,DIMENSION(:,:,:)::sumv ! suma de velocidades para cada colision
     REAL(kind=8),ALLOCATABLE,DIMENSION(:,:):: tmp !temperaturas en las dos direcciones del espacio
     REAL(kind=8)::temp,tempz,H,longy,sigma,epsilon !temperaturas en "y" y en "z", altura vertical y anchura, sigma==tamaño de la particula
+    REAL(kind=8)::alpha !coeficiente de restitucion
     REAL(kind=8)::tcol,colt !tiempo de colision, tiempo para comparar y tiempo inicial
     INTEGER::rep,iter,n !numero de repeticiones que se realizan (tiempo) y numero de iteraciones  (numero de copias)
     REAL(kind=8),ALLOCATABLE,DIMENSION(:)::rab,vab !distancias y velocidades relativas
@@ -38,6 +39,9 @@ implicit none
     longy=REAL(n,8)/(0.06*(H-sigma))
     rep=550000
     iter=1
+
+    alpha =0.2
+
     ALLOCATE(r(n,2),v(n,2),sumv(iter,rep,2),tmp(rep,2),rab(2),vab(2),colisiones(iter),tiempos(rep),deltas(rep))
 
 
@@ -192,9 +196,9 @@ implicit none
                    sumv(i,j,l)=0.5d00*sum(v(:,l)**2)/n
 
                END DO
-               IF (j>1) THEN
-               deltas(j)=(0.06*sigma*epsilon*(sumv(i,j,1)-sumv(i,1,1))*(tiempos(j)))/(sqrt(pi*sumv(i,j,1)))
-               END IF
+            !    IF (j>1) THEN
+            !    deltas(j)=(0.06*sigma*epsilon*(sumv(i,j,1)-sumv(i,1,1))*(tiempos(j)))/(sqrt(pi*sumv(i,j,1)))
+            !    END IF
         END DO
         
         CALL superpuesto()
@@ -239,11 +243,11 @@ implicit none
         END DO
         CLOSE(12)
  
-        OPEN(12,FILE='sparam.txt',STATUS='unknown')
-        DO i=1,rep
-            WRITE(12,*) deltas(i)
-        END DO
-        CLOSE(12)
+        ! OPEN(13,FILE='sparam.txt',STATUS='unknown')
+        ! DO i=1,rep
+        !     WRITE(13,*) deltas(i)
+        ! END DO
+        ! CLOSE(13)
 
 
 
@@ -278,6 +282,29 @@ implicit none
             ! PRINT*, "velocidad particula 1",v(i,:)
             ! PRINT*, "velocidad particula 2,",v(j,:)
       END SUBROUTINE collide
+      SUBROUTINE collide_granular ( a, b,alpha)
+        IMPLICIT NONE
+        INTEGER, INTENT(in)  :: a, b   ! Colliding atom indices
+        ! This routine implements collision dynamics, updating the velocities
+        ! The colliding pair (i,j) is assumed to be in contact already
+
+        REAL(kind=8), DIMENSION(2) :: rij, vij
+        REAL(kind=8)               :: factor,alpha
+
+        rij(:) = r(a,:) - r(b,:)
+        rij(1) = rij(1) - longy*ANINT ( rij(1)/(longy) ) ! Separation vector
+        vij(:) = v(a,:) - v(b,:)           ! Relative velocity
+
+        factor = DOT_PRODUCT ( rij, vij )
+        vij    = -factor * rij
+
+        v(a,:) = v(a,:) + vij*(1+alpha)/2d00
+        v(b,:) = v(b,:) - vij*(1+alpha)/2d00
+            ! PRINT*, "velocidad particula 1",v(i,:)
+            ! PRINT*, "velocidad particula 2,",v(j,:)
+      END SUBROUTINE collide_granular
+
+
 
      SUBROUTINE superpuesto() 
         LOGICAL::super
