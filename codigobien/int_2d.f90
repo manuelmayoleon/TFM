@@ -7,8 +7,9 @@ subroutine inicializacion2d(npart,longy,alt,temp,tempz,r,v)
     !! longx-->longitud en dimensiones y del confinamiento en el eje horizontal. 
     
     implicit none
+    REAL(kind = 8), EXTERNAL :: dran_u
     INTEGER::npart
-    INTEGER:: i,number
+    INTEGER:: i,number,iseed
     REAL(kind=8)::longy,alt
     REAL(kind=8),DIMENSION(npart,2):: v
     REAL(kind=8),DIMENSION(npart,2)::r
@@ -21,7 +22,11 @@ subroutine inicializacion2d(npart,longy,alt,temp,tempz,r,v)
          sumv(:)=0
          sumvsq=0
          sumvsqz=0
-               
+    
+    !! llamamos al generador de numeros aleatorios
+    iseed=2312
+    call dran_ini(iseed)
+
     !!!! introducimos las variables caracteristicas del sistema      
          
          number=npart +1 !te da aproximadamente la mitad de las particulas para distribuirlas en x e y
@@ -34,10 +39,15 @@ subroutine inicializacion2d(npart,longy,alt,temp,tempz,r,v)
         END DO
            
         DO i=1,npart,2 
-            CALL RANDOM_NUMBER(x1)
-            CALL RANDOM_NUMBER(y1)
-            CALL RANDOM_NUMBER(x2)
-            CALL RANDOM_NUMBER(y2)
+            ! CALL RANDOM_NUMBER(x1)
+            ! CALL RANDOM_NUMBER(y1)
+            ! CALL RANDOM_NUMBER(x2)
+            ! CALL RANDOM_NUMBER(y2)
+            x1=dran_u()
+            y1=dran_u()
+            x2=dran_u()
+            y2=dran_u()
+
             !determina las velocidades a traves de una distribucion maxwelliana
             v(i,1)=sqrt(-2.*log(x1))*cos(2.*pi*y1)
             v(i,2)=sqrt(-2.*log(x2))*cos(2.*pi*y2)

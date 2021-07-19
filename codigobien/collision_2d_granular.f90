@@ -5,6 +5,18 @@ PROGRAM final_version
     !!  Calculo de colisiones en 2d con condiciones periodicas      !!
     !!                                                              !!
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !*****************************************************************************80
+  !  Modified:
+  !
+  !    19 Jule 2021
+  !
+  !  Author:
+  !
+  !    Manuel Mayo León 
+  !
+
+
+
 implicit none
 
 
@@ -15,7 +27,7 @@ implicit none
     REAL(kind=8),ALLOCATABLE,DIMENSION(:,:):: tmp !temperaturas en las dos direcciones del espacio
     REAL(kind=8)::temp,tempz,H,longy,sigma,epsilon !temperaturas en "y" y en "z", altura vertical y anchura, sigma==tamaño de la particula
     REAL(kind=8)::alpha, vp  !! coeficiente de restitucion y velocidad que se introduce a traves de la pared 
-    LOGICAL :: boolean
+    LOGICAL :: boolean,granular
     REAL(kind=8)::tcol,colt !tiempo de colision, tiempo para comparar y tiempo inicial
     INTEGER::rep,iter,n !numero de repeticiones que se realizan (tiempo) y numero de iteraciones  (numero de copias)
     REAL(kind=8),ALLOCATABLE,DIMENSION(:)::rab,vab !distancias y velocidades relativas
@@ -26,13 +38,13 @@ implicit none
     REAL(kind=8), parameter :: pi = 4 * atan (1.0_8)
     !!! para deteminar el tiempo de cálculo
     REAL(kind=4):: start, finish
-   
+    character(len=10)::alfa
 
 
     !notar que consideramos KT=1
     !inicializamos variables
     temp=1.0d00
-    tempz=5*temp
+    tempz=0.1*temp
     sigma=1d00
     H=1.5*sigma
     n=500
@@ -41,22 +53,37 @@ implicit none
     rep=550000
     iter=1
 
-    alpha=0.2
-    vp=0.001*temp
+    alpha=0.9
+    vp=0.0001*temp
 
     ALLOCATE(r(n,2),v(n,2),sumv(iter,rep,2),tmp(rep,2),rab(2),vab(2),colisiones(iter),tiempos(rep),deltas(rep))
 
+    write ( *, '(a)' ) ' '
+    write ( *, '(a)' ) 'MD 2D SIMULATION'
+    write ( *, '(a)' ) '  FORTRAN90 version'
     
+    write ( *, '(a)' ) ' '
+    write ( *, '(a,g14.6)' ) '  Temperature y axis = ', temp
+    write ( *, '(a,g14.6)' ) '  Temperature z axis = ', tempz
+    write ( *, '(a,i8)' ) '  number of steps = ', rep
+    write ( *, '(a,i8)' ) &
+      '  The number of iterations taken is ITERATIONS = ', iter
+      write ( *, '(a,i8)' ) '  N = ', n
+    write ( *, '(a,g14.6)' ) '  diameter (sigma) = ', sigma
+    write ( *, '(a,g14.6)' ) '  epsilon = ', epsilon
+    write ( *, '(a,g14.6)' ) '  alpha = ', alpha
+    write ( *, '(a,g14.6)' ) '  v_p = ', vp
+     
+    write ( *, '(a)' ) ' '
+
+
+    WRITE(alfa,'(F10.2)')   alpha
+   
     !!!! para guardar los valores de las posiciones y velocidades iniciales!!!!!!
-    ! OPEN(9,FILE='velocidad_init.txt',STATUS='unknown')                       
-    ! OPEN(10,FILE='posiciones_init.txt',STATUS='unknown')                      
-    ! CALL inicializacion2d(n,longy,H,temp,tempz,r,v)                         
-    ! DO i=1,n                                                                
-    !     WRITE(9,*) v(i,1), v(i,2)
-    !     WRITE(10,*)  r(i,1), r(i,2)
-    ! END DO
-    ! CLOSE(9)
-    ! CLOSE(10)
+
+    ! call save_initial_distribution()
+
+  
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     !pongo el numero de colisiones a cero
@@ -96,7 +123,11 @@ implicit none
 
             !colision entre particulas  
             IF (ni(2)<=n .AND. ni(2)>0) THEN
-            CALL collide(ni(1),ni(2))
+                  ! if granular eqv false, the particle is confined between two rigid plates 
+                !else, the lower plate is vibrating in a sawtooth way 
+                granular=.TRUE.
+                ! granular=.FALSE.
+            CALL collide(ni(1),ni(2),granular)
             colisiones(i)=colisiones(i)+1
             END IF
 
@@ -105,7 +136,7 @@ implicit none
                 ! if boolean eqv false, the particle is confined between two rigid plates 
                 !else, the lower plate is vibrating in a sawtooth way 
                 ! boolean=.TRUE.
-                boolean=.FALSE.
+                boolean=.TRUE.
                 CALL wall_collide(ni(1),ni(2),boolean)            
             !colisiones(i)=colisiones(i)+1
             END IF
@@ -126,7 +157,7 @@ implicit none
 
         ! Guardamos los valores de las velocidades para todas las trayectorias de forma consecutiva. Asi aumentamos la estadística
 
-        OPEN(11,FILE='velocidad.txt',  FORM ='FORMATTED',STATUS='UNKNOWN',POSITION='APPEND'&
+        OPEN(11,FILE='velocidad_' // trim(adjustl(alfa)) // '.txt',  FORM ='FORMATTED',STATUS='UNKNOWN',POSITION='APPEND'&
         ,ACTION='READWRITE')   
                 DO l=1,n
                     WRITE(11,*) v(l,1), v(l,2)
@@ -143,7 +174,7 @@ implicit none
     DO l=1,rep
         DO m=1,2
         tmp(l,m)=sum(sumv(:,l,m))/iter
-        tmp(l,m)=2*tmp(l,m)/(temp+tempz)
+        ! tmp(l,m)=2*tmp(l,m)/(temp+tempz)
         END DO
     END DO 
 
@@ -153,7 +184,7 @@ implicit none
     
     
 
-    OPEN(9,FILE='temperaturas.txt',STATUS='unknown')
+    OPEN(9,FILE='temperaturas_' // trim(adjustl(alfa)) // '.txt',STATUS='unknown')
     DO l=1,rep
         WRITE(9,*) tmp(l,1), tmp(l,2)
     END DO 
@@ -161,20 +192,20 @@ implicit none
 
         
 
-    OPEN(10,FILE='pos.txt',STATUS='unknown')   
+    OPEN(10,FILE='pos_' // trim(adjustl(alfa)) // '.txt',STATUS='unknown')   
         DO l=1,n
          WRITE(10,*) r(l,1), r(l,2)
         END DO
     CLOSE(10) 
 
     
-    OPEN(12,FILE='tiemposdecol.txt',STATUS='unknown') 
+    OPEN(12,FILE='tiemposdecol_' // trim(adjustl(alfa)) // '.txt',STATUS='unknown') 
     DO l=1,rep
         WRITE(12,*) tiempos(l)
     END DO
     CLOSE(12) 
     
-    OPEN(13,FILE='sparam.txt',STATUS='unknown')
+    OPEN(13,FILE='sparam_' // trim(adjustl(alfa)) // '.txt',STATUS='unknown')
     DO l=1,rep
         WRITE(13,*) deltas(l)
     END DO
@@ -197,14 +228,26 @@ implicit none
 
 
     CONTAINS
+        !!!! para guardar los valores de las posiciones y velocidades iniciales!!!!!!
+        subroutine save_initial_distribution()
+          
+            OPEN(7,FILE='velocidad_init.txt',STATUS='unknown')                       
+            OPEN(8,FILE='posiciones_init.txt',STATUS='unknown')                      
+            CALL inicializacion2d(n,longy,H,temp,tempz,r,v)                         
+            DO i=1,n                                                                
+                WRITE(7,*) v(i,1), v(i,2)
+                WRITE(8,*)  r(i,1), r(i,2)
+            END DO
+            CLOSE(7)
+            CLOSE(8)
 
-
+        end subroutine save_initial_distribution
    
 
-        SUBROUTINE collide ( a, b)
+        SUBROUTINE collide ( a, b, granular)
             IMPLICIT NONE
             INTEGER, INTENT(in)  :: a, b   ! Colliding atom indices
-
+            LOGICAL :: granular
             ! This routine implements collision dynamics, updating the velocities
             ! The colliding pair (i,j) is assumed to be in contact already
 
@@ -216,7 +259,11 @@ implicit none
             vij(:) = v(a,:) - v(b,:)           ! Relative velocity
 
             factor = DOT_PRODUCT ( rij, vij )
-            vij    = -factor * rij
+            if(granular .EQV. .TRUE.) THEN 
+                vij    = -((1+alpha)*factor * rij)/(2d00)
+            ELSE
+                vij    = -factor * rij
+            END IF
 
             v(a,:) = v(a,:) + vij
             v(b,:) = v(b,:) - vij
@@ -335,18 +382,19 @@ implicit none
         !!!!! COLISIONES ENTRE UNA PARTICULA Y LA PARED. 
         ! granular=.FALSE. en el caso de colisiones con dos paredes rígidas
         ! granular =.TRUE. en el caso de que la pared de abajo sea de tipo diente de sierra 
-        subroutine wall_collide(p,q,granular)
+        subroutine wall_collide(p,q,boolean)
             IMPLICIT NONE
             INTEGER :: p,q 
-            LOGICAL :: granular
+            LOGICAL :: boolean
             
-            if (granular .EQV. .FALSE.) THEN 
+            if (boolean .EQV. .FALSE.) THEN 
                 v(p,2)=-v(p,2)
             ELSE 
                 IF(q==n+1) THEN 
                     v(p,2)=-v(p,2)
                 ELSE 
                     v(p,2)=2*vp-v(p,2)
+                    ! print*, "collision with bottom wall"
                 END IF 
             END IF
         end subroutine wall_collide
@@ -372,5 +420,7 @@ implicit none
         END IF
 
         END SUBROUTINE superpuesto
+
+
 
 END PROGRAM final_version

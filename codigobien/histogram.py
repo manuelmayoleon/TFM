@@ -16,11 +16,11 @@ from matplotlib.transforms import (
 
 
 
-r=np.genfromtxt("pos.txt",names=["ry","rz"])
-v = np.genfromtxt("velocidad.txt", names=["vy","vz"])
-
-temp=np.genfromtxt("temperaturas.txt" ,names= ["y","z"])
-tiempo=np.genfromtxt("tiemposdecol.txt",names=["t"])
+r=np.genfromtxt("pos_0.90.txt",names=["ry","rz"])
+v = np.genfromtxt("velocidad_0.90.txt", names=["vy","vz"])
+vinit=np.genfromtxt("velocidad_init.txt", names=["vy","vz"])
+temp=np.genfromtxt("temperaturas_0.90.txt" ,names= ["y","z"])
+tiempo=np.genfromtxt("tiemposdecol_0.90.txt",names=["t"])
 # print(v)
 
 
@@ -28,7 +28,7 @@ tiempo=np.genfromtxt("tiemposdecol.txt",names=["t"])
 
 # Esta parte simplemente sirve para poder plotear a la vez
 # el fit y el histograma
-num_bins =100
+num_bins =50
 
 
 fig , ax = plt.subplots (1 ,1)
@@ -44,14 +44,14 @@ plt.title ( r' \textbf {Histograma de la velocidad en el eje y}  ',fontsize=30)
 # plt.xlim (1 ,9)
 
 # Hacer el histograma 
-n,bins,patches = ax.hist(v['vy'],num_bins,density ='true',facecolor ='C0',edgecolor='white',label=' ')
+n,bins,patches = ax.hist(v['vy'],num_bins,density ='true',facecolor ='C0',edgecolor='white',label='$v_y$ ')
 # ,edgecolor='yellow'
-
+n2,bins2,patches2 = ax.hist(vinit['vy'],num_bins,density ='true',facecolor ='C1',edgecolor='white',alpha=0.8,label='$v^i_y$ ')
 plt.grid(color='k', linestyle='--', linewidth=0.5,alpha=0.2)
 
 
 
-N=1000
+N=100
 
 def gaussian(x,mu,sig):
     return np.exp(-np.power(x-mu,2.)/(2*sig))/np.sqrt(2*np.pi*sig)
@@ -62,9 +62,12 @@ x =np.linspace(min(v['vy']),max(v['vy']),N)
 # #     return a * x **( b )
 
 params , params_covariance = optimize.curve_fit(gaussian,bins[1:],n,method='dogbox')
+
+params2 , params_covariance2 = optimize.curve_fit(gaussian,bins2[1:],n2,method='dogbox')
 # # print('param')
 # # print (params)
 plt.plot(x,gaussian(x,params[0],params[1]),color='C3',label='Ajuste Gaussiano')
+plt.plot(x,gaussian(x,params2[0],params2[1]),color='C4',label='Ajuste Gaussiano de $v^i_y$')
 # # plt.savefig ('destination_path.eps',format ='eps')
 # plt.legend(loc=0,fontsize=20)
 # def fit_func (x ,a , b ) :
