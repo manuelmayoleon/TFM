@@ -28,7 +28,7 @@ tiempo=np.genfromtxt("tiemposdecol_0.90.txt",names=["t"])
 
 # Esta parte simplemente sirve para poder plotear a la vez
 # el fit y el histograma
-num_bins =50
+num_bins =100
 
 
 fig , ax = plt.subplots (1 ,1)
@@ -80,6 +80,9 @@ plt.grid(color='k', linestyle='--', linewidth=0.5,alpha=0.2)
 plt.xlabel ( r' $t$ ', fontsize=20)
 plt.ylabel ( r' $T$ ',fontsize=20)
 plt.legend(loc=0,fontsize=20)
+plt.xlim(0,1500)
+plt.ylim(0.0,1.0)
+
 
 ax2 = plt.subplots(1,1)
 

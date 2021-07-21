@@ -25,7 +25,7 @@ implicit none
     REAL(kind=8),ALLOCATABLE,DIMENSION(:,:):: r,v !vector con posiciones y velocidades
     REAL(kind=8),ALLOCATABLE,DIMENSION(:,:,:)::sumv ! suma de velocidades para cada colision
     REAL(kind=8),ALLOCATABLE,DIMENSION(:,:):: tmp !temperaturas en las dos direcciones del espacio
-    REAL(kind=8)::temp,tempz,H,longy,sigma,epsilon !temperaturas en "y" y en "z", altura vertical y anchura, sigma==tamaño de la particula
+    REAL(kind=8)::temp,tempz,H,longy,sigma,epsilon,rho !temperaturas en "y" y en "z", altura vertical y anchura, sigma==tamaño de la particula, rho=density
     REAL(kind=8)::alpha, vp  !! coeficiente de restitucion y velocidad que se introduce a traves de la pared 
     LOGICAL :: boolean,granular
     REAL(kind=8)::tcol,colt !tiempo de colision, tiempo para comparar y tiempo inicial
@@ -48,19 +48,21 @@ implicit none
     sigma=1d00
     H=1.5*sigma
     n=500
+    rho=0.06d00
     epsilon=(H-sigma)/sigma
-    longy=REAL(n,8)/(0.06*(H-sigma))
-    rep=550000
+    longy=REAL(n,8)/(rho*(H-sigma))
+    ! rep=550000
+    rep=1000000
     iter=1
 
     alpha=0.9
-    vp=0.0001*temp
+    vp=0.0002*temp
 
     ALLOCATE(r(n,2),v(n,2),sumv(iter,rep,2),tmp(rep,2),rab(2),vab(2),colisiones(iter),tiempos(rep),deltas(rep))
 
     write ( *, '(a)' ) ' '
-    write ( *, '(a)' ) 'MD 2D SIMULATION'
-    write ( *, '(a)' ) '  FORTRAN90 version'
+    write ( *, '(a)' ) '            MD 2D SIMULATION                 '
+    write ( *, '(a)' ) '            FORTRAN90 version'
     
     write ( *, '(a)' ) ' '
     write ( *, '(a,g14.6)' ) '  Temperature y axis = ', temp
@@ -70,6 +72,7 @@ implicit none
       '  The number of iterations taken is ITERATIONS = ', iter
       write ( *, '(a,i8)' ) '  N = ', n
     write ( *, '(a,g14.6)' ) '  diameter (sigma) = ', sigma
+    write ( *, '(a,g14.6)' ) '  density (rho) = ', rho
     write ( *, '(a,g14.6)' ) '  epsilon = ', epsilon
     write ( *, '(a,g14.6)' ) '  alpha = ', alpha
     write ( *, '(a,g14.6)' ) '  v_p = ', vp
@@ -211,7 +214,7 @@ implicit none
     END DO
     CLOSE(13)
    
-
+    call save_data_file()
  
     !final del programa
     call cpu_time(finish)
@@ -242,6 +245,18 @@ implicit none
             CLOSE(8)
 
         end subroutine save_initial_distribution
+
+
+        subroutine save_data_file()
+            implicit none 
+            OPEN(UNIT=35,FILE='data.txt', FORM ='FORMATTED',STATUS='UNKNOWN',POSITION='APPEND'&
+            ,ACTION='READWRITE')
+    
+            write(35,* ) 'N', n, 'T_y', temp, 'T_z', tempz, 'epsilon', epsilon,  ' alpha    '&
+            , alpha, ' vp ', vp  , ' rho ', rho 
+            write(35,* ) ' '
+          
+        end subroutine save_data_file
    
 
         SUBROUTINE collide ( a, b, granular)
