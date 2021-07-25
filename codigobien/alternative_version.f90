@@ -1,5 +1,5 @@
-!final_version.f90
-PROGRAM final_version
+!alternative_version.f90
+PROGRAM alternative_version
 
     !!!!!!!!!!!!!!!!!!Programa para calcular las colisiones!!!!!!!!!!!
     !!  Calculo de colisiones en 2d con condiciones periodicas      !!
@@ -35,10 +35,10 @@ implicit none
     sigma=1d00
     H=1.5*sigma
     n=500
-    densidad=0.02d0
+    densidad=0.06d0
     epsilon=(H-sigma)/sigma
     longy=REAL(n,8)/(densidad*H)
-    rep=2000000
+    rep=1000000
     iter=1
 
     alpha =0.2
@@ -90,116 +90,85 @@ implicit none
             prodvij=0.d00
             prodrij=0.d00
             qij=0.d00
+
             DO k=1,n
-                IF(k/=n) THEN
-                rab(:)=r(k,:)-r(k+1,:) ! calculamos posiciones relativas
-                ! rab(1)=rab(1)-longy*ANINT(rab(1)/(longy)) ! condiciones periodicas
-                vab(:)=v(k,:)-v(k+1,:)   !calculamos velocidades relativas
-                bij    = producto_escalar ( rab, vab )   ! obtenemos el producto escalar (ri-rj)*(vi-vj)
-                    IF (bij<0 ) THEN
-                        prodvij=producto_escalar(vab,vab)
-                        prodrij=producto_escalar(rab,rab)
-                        ! PRINT*, prodrij
-                        ! PRINT*, sum(rab**2)
-                        discr=bij**2-(prodrij-sigma**2)*(prodvij)
-                        ! discr=bij**2-(SUM(rab**2)-sigma**2)*SUM(vab**2)
-                        IF( discr>0.0) THEN ! si colisiona con la sucesiva particula
-                        
-                            ! tcol = ( -bij - sqrt( discr )) / ( prodvij )
-                        
-                            !! ALTERNATIVE WAY 
-                        
-                            qij=-(bij+sign(1.0d00,bij)*dsqrt(discr))    
-                         
-                            tcol=MIN(qij/prodvij,(prodrij-sigma**2)/qij )
-                            
-                            !comprobar que los tiempos no son negativos
-                            IF (tcol<0) THEN 
-                                PRINT*, 'colisión:',k,k+1,'tiempo',tcol
-                            END IF 
-                        
-                            IF (tcol<colt .AND. tcol> 0 ) THEN
-                                colt=tcol
-                                ni(1)=k
-                                ni(2)=k+1
+                DO l=k+1,n
+                        IF(k/=n) THEN 
+                        rab(:)=r(k,:)-r(l,:) ! calculamos posiciones relativas
+                        rab(1)=rab(1)-longy*ANINT(rab(1)/(longy)) ! condiciones periodicas
+                        vab(:)=v(k,:)-v(l,:)   !calculamos velocidades relativas
+                        bij    = producto_escalar ( rab, vab )   ! obtenemos el producto escalar (ri-rj)*(vi-vj)
+                            IF (bij<0 ) THEN
+                                prodvij=producto_escalar(vab,vab)
+                                prodrij=producto_escalar(rab,rab)
+                                ! PRINT*, prodrij
+                                ! PRINT*, sum(rab**2)
+                                discr=bij**2-(prodrij-sigma**2)*(prodvij)
+                                ! discr=bij**2-(SUM(rab**2)-sigma**2)*SUM(vab**2)
+                                IF( discr>0.0) THEN ! si colisiona con la sucesiva particula
+                                
+                                    ! tcol = ( -bij - sqrt( discr )) / ( prodvij )
+                                
+                                    !! ALTERNATIVE WAY 
+                                
+                                    qij=-(bij+sign(1.0d00,bij)*dsqrt(discr))    
+                                
+                                    tcol=MIN(qij/prodvij,(prodrij-sigma**2)/qij )
+                                    
+                                    !comprobar que los tiempos no son negativos
+                                    IF (tcol<0) THEN 
+                                        PRINT*, 'colisión:',k,k+1,'tiempo',tcol
+                                    END IF 
+                                
+                                    IF (tcol<colt .AND. tcol> 0 ) THEN
+                                        colt=tcol
+                                        ni(1)=k
+                                        ni(2)=k+1
+                                    END IF
+                                END IF
                             END IF
                         END IF
-                    END IF
-                END IF
+                        
+                            
+
                     
-                    !!!!!!!!!!!!!!!!!!!!!!!!!!! Colisión con las paredes !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-
-
-                    IF (v(k,2)>0 ) THEN
-                        tcol=(H-sigma*0.5-r(k,2))/v(k,2)
-
-                        !comprobar que los tiempos no son negativos
-                        IF (tcol<0) THEN 
-                        PRINT*, 'colisión:',k,' con pared. Tiempo',tcol
-                        END IF 
                     
-                            IF (tcol<colt ) THEN
-                                colt=tcol
-                                ni(1)=k
-                                ni(2)=n+1
-                            END IF
-                    END IF
-                    IF (v(k,2)<0 ) THEN
-                        tcol=(sigma*0.5-r(k,2))/v(k,2)
+                    
+                            
+                END DO
+                !!!!!!!!!!!!!!!!!!!!!!!!!!! Colisión con las paredes !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+               !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-                            !comprobar que los tiempos no son negativos
-                            IF (tcol<0 ) THEN 
-                            PRINT*, 'colisión:',k,' con pared. Tiempo',tcol
-                            END IF 
 
-                            IF (tcol<colt) THEN
+
+                IF (v(k,2)>0 ) THEN
+                    ! tcol=(H-sigma*0.5-r(k,2))/v(k,2)
+                    tcol=((H-sigma)*0.5-r(k,2))/v(k,2)
+                    !comprobar que los tiempos no son negativos
+                    IF (tcol<0) THEN 
+                    PRINT*, 'colisión:',k,' con pared. Tiempo',tcol
+                    END IF 
+                
+                        IF (tcol<colt ) THEN
                             colt=tcol
                             ni(1)=k
-                            ni(2)=n+2
-                            END IF
-                    END IF
-                    !!!!!!!!!!!!!!!! Si consideramos la partícula 1, vemos si esta colisiona con la última!!!!!!!!!!!!!!    
-                    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                    IF (k==1) THEN
-                        rab(:)=r(k,:)-r(n,:) ! calculamos posiciones relativas
-                        rab(1)=rab(1)-longy*ANINT(rab(1)/(longy)) ! condiciones periodicas
-                        vab(:)=v(k,:)-v(n,:)   !calculamos velocidades relativas
-                        bij    = producto_escalar ( rab, vab )   ! obtenemos el producto escalar (ri-rj)*(vi-vj)
-                        IF (bij<0 ) THEN
-                            prodvij=producto_escalar(vab,vab)
-                            prodrij=producto_escalar(rab,rab)
-                            ! PRINT*, prodrij
-                            ! PRINT*, sum(rab**2)
-                        discr=bij**2-(prodrij-sigma**2)*(prodvij)
-                        IF( discr>0.0) THEN ! si colisiona con la sucesiva particula
-                            ! tcol = ( -bij - SQRT ( discr ) ) / (prodvij )
-                            !! ALTERNATIVE WAY 
-                        
-                            qij=-(bij+sign(1.0d00,bij)*dsqrt(discr))    
-                         
-                            tcol=MIN(qij/prodvij,(prodrij-sigma**2)/qij )
-                            !comprobar que los tiempos no son negativos
+                            ni(2)=n+1
+                        END IF
+                END IF
+                IF (v(k,2)<0 ) THEN
+                    ! tcol=(sigma*0.5-r(k,2))/v(k,2)
+                    tcol=(-(H-sigma)*0.5-r(k,2))/v(k,2)
+                        !comprobar que los tiempos no son negativos
+                        IF (tcol<0 ) THEN 
+                        PRINT*, 'colisión:',k,' con pared. Tiempo',tcol
+                        END IF 
 
-                            IF (tcol<0) THEN 
-                                PRINT*, 'colisión:',k,' con',n,'. Tiempo',tcol
-                            END IF  
-                            
-                            IF (tcol<colt ) THEN
-                                colt=tcol
-                                ni(1)=k
-                                ni(2)=n
-                            END IF
+                        IF (tcol<colt) THEN
+                        colt=tcol
+                        ni(1)=k
+                        ni(2)=n+2
                         END IF
-                        END IF
-            
-            
-            
-                    
-                
-                
-                    END IF
+                END IF
 
 
             END DO
@@ -374,4 +343,4 @@ implicit none
 
     END SUBROUTINE superpuesto
 
-END PROGRAM final_version
+END PROGRAM alternative_version

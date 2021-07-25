@@ -48,7 +48,7 @@ implicit none
     sigma=1d00
     H=1.5*sigma
     n=500
-    rho=0.06d00
+    rho=0.02d00
     epsilon=(H-sigma)/sigma
     longy=REAL(n,8)/(rho*(H-sigma))
     ! rep=550000
@@ -56,7 +56,7 @@ implicit none
     iter=1
 
     alpha=0.9
-    vp=0.0002*temp
+    vp=0.001*temp
 
     ALLOCATE(r(n,2),v(n,2),sumv(iter,rep,2),tmp(rep,2),rab(2),vab(2),colisiones(iter),tiempos(rep),deltas(rep))
 
@@ -94,7 +94,18 @@ implicit none
     !inicializo el tiempo para calcular el tiempo de computo
     call cpu_time(start)
     !Abro los archivos en los que voy a gaurdar los valores de las temperaturas, velocidades, posiciones, etc...
-  
+    
+    ! If granular eqv false, the particles lost energy on each collision (inelastic disks) 
+    !else, the collision is elastic between particles 
+    granular=.TRUE.
+    ! granular=.FALSE.
+    
+    ! If boolean eqv false, the particle is confined between two rigid plates 
+    !else, the lower plate is vibrating in a sawtooth way 
+    ! boolean=.TRUE.
+    boolean=.TRUE.
+
+
     DO i=1,iter
         !inicializo los tiempos 
         t=0.0
@@ -126,21 +137,15 @@ implicit none
 
             !colision entre particulas  
             IF (ni(2)<=n .AND. ni(2)>0) THEN
-                  ! if granular eqv false, the particle is confined between two rigid plates 
-                !else, the lower plate is vibrating in a sawtooth way 
-                granular=.TRUE.
-                ! granular=.FALSE.
-            CALL collide(ni(1),ni(2),granular)
+             
+            CALL collide(ni(1),ni(2))
             colisiones(i)=colisiones(i)+1
             END IF
 
             !colision entre particula a y muro
             IF (ni(2)>n) THEN
-                ! if boolean eqv false, the particle is confined between two rigid plates 
-                !else, the lower plate is vibrating in a sawtooth way 
-                ! boolean=.TRUE.
-                boolean=.TRUE.
-                CALL wall_collide(ni(1),ni(2),boolean)            
+                
+                CALL wall_collide(ni(1),ni(2))            
             !colisiones(i)=colisiones(i)+1
             END IF
 
@@ -259,10 +264,10 @@ implicit none
         end subroutine save_data_file
    
 
-        SUBROUTINE collide ( a, b, granular)
+        SUBROUTINE collide ( a, b)
             IMPLICIT NONE
             INTEGER, INTENT(in)  :: a, b   ! Colliding atom indices
-            LOGICAL :: granular
+            ! LOGICAL :: granular
             ! This routine implements collision dynamics, updating the velocities
             ! The colliding pair (i,j) is assumed to be in contact already
 
@@ -286,16 +291,16 @@ implicit none
                 ! PRINT*, "velocidad particula 2,",v(j,:)
         END SUBROUTINE collide
     
-        subroutine calcular_tiempo_de_colision(k) 
+        subroutine calcular_tiempo_de_colision(c) 
             IMPLICIT NONE
 
-            INTEGER, INTENT(in)  :: k
+            INTEGER, INTENT(in)  :: c
             
             
 
-            rab(:)=r(k,:)-r(k+1,:) ! calculamos posiciones relativas
+            rab(:)=r(c,:)-r(c+1,:) ! calculamos posiciones relativas
             rab(1)=rab(1)-longy*ANINT(rab(1)/(longy)) ! condiciones periodicas
-            vab(:)=v(k,:)-v(k+1,:)   !calculamos velocidades relativas
+            vab(:)=v(c,:)-v(c+1,:)   !calculamos velocidades relativas
             bij    = DOT_PRODUCT ( rab, vab )   ! obtenemos el producto escalar (ri-rj)*(vi-vj)
                 IF (bij<0 ) THEN
                 discr=bij**2-(SUM(rab**2)-sigma**2)*SUM(vab**2)
@@ -304,13 +309,13 @@ implicit none
                         
                     !comprobar que los tiempos no son negativos
                     IF (tcol<0) THEN 
-                       PRINT*, 'colisión:',k,k+1,'tiempo',tcol
+                       PRINT*, 'colisión:',c,c+1,'tiempo',tcol
                     END IF 
                     
                     IF (tcol<colt ) THEN
                         colt=tcol
-                        ni(1)=k
-                        ni(2)=k+1
+                        ni(1)=c
+                        ni(2)=c+1
                     END IF
                 END IF
                 END IF
@@ -321,23 +326,26 @@ implicit none
 
 
 
-                IF (v(k,2)>0 ) THEN
-                    tcol=(H-sigma*0.5-r(k,2))/v(k,2)
+                IF (v(c,2)>0 ) THEN
+                    tcol=(H-sigma*0.5-r(c,2))/v(c,2)
 
                     !comprobar que los tiempos no son negativos
                     IF (tcol<0) THEN 
-                        PRINT*, 'colisión:',k,' con pared. Tiempo',tcol
+                        PRINT*, 'colisión:',c,' con pared. Tiempo',tcol
                     END IF 
                 
                         IF (tcol<colt ) THEN
                             colt=tcol
-                            ni(1)=k
+                            ni(1)=c
                             ni(2)=n+1
                         END IF
                 END IF
-                IF (v(k,2)<0 ) THEN
-                    tcol=(sigma*0.5-r(k,2))/v(k,2)
-
+                IF (v(c,2)<0 ) THEN
+                    IF(boolean .EQV. .TRUE.) THEN 
+                        tcol=(sigma*0.5-r(k,2))/(v(k,2)-vp)
+                    ELSE
+                        tcol=(sigma*0.5-r(k,2))/v(k,2)
+                    END IF
                         !comprobar que los tiempos no son negativos
                         IF (tcol<0 ) THEN 
                             PRINT*, 'colisión:',k,' con pared. Tiempo',tcol
@@ -345,16 +353,16 @@ implicit none
 
                         IF (tcol<colt) THEN
                         colt=tcol
-                        ni(1)=k
+                        ni(1)=c
                         ni(2)=n+2
                         END IF
                 END IF
                 !!!!!!!!!!!!!!!! Si consideramos la partícula 1, vemos si esta colisiona con la última!!!!!!!!!!!!!!    
                 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                IF (k==1) THEN
-                    rab(:)=r(k,:)-r(n,:) ! calculamos posiciones relativas
+                IF (c==1) THEN
+                    rab(:)=r(c,:)-r(n,:) ! calculamos posiciones relativas
                     rab(1)=rab(1)-longy*ANINT(rab(1)/(longy)) ! condiciones periodicas
-                    vab(:)=v(k,:)-v(n,:)   !calculamos velocidades relativas
+                    vab(:)=v(c,:)-v(n,:)   !calculamos velocidades relativas
                     bij    = DOT_PRODUCT ( rab, vab )   ! obtenemos el producto escalar (ri-rj)*(vi-vj)
                     IF (bij<0 ) THEN
                     discr=bij**2-(SUM(rab**2)-sigma**2)*SUM(vab**2)
@@ -364,12 +372,12 @@ implicit none
                         !comprobar que los tiempos no son negativos
 
                         IF (tcol<0) THEN 
-                            PRINT*, 'colisión:',k,' con',n,'. Tiempo',tcol
+                            PRINT*, 'colisión:',c,' con',n,'. Tiempo',tcol
                         END IF  
                         
                         IF (tcol<colt ) THEN
                             colt=tcol
-                            ni(1)=k
+                            ni(1)=c
                             ni(2)=n
                         END IF
                     END IF
@@ -397,10 +405,10 @@ implicit none
         !!!!! COLISIONES ENTRE UNA PARTICULA Y LA PARED. 
         ! granular=.FALSE. en el caso de colisiones con dos paredes rígidas
         ! granular =.TRUE. en el caso de que la pared de abajo sea de tipo diente de sierra 
-        subroutine wall_collide(p,q,boolean)
+        subroutine wall_collide(p,q)
             IMPLICIT NONE
             INTEGER :: p,q 
-            LOGICAL :: boolean
+            ! LOGICAL :: boolean
             
             if (boolean .EQV. .FALSE.) THEN 
                 v(p,2)=-v(p,2)
@@ -408,7 +416,7 @@ implicit none
                 IF(q==n+1) THEN 
                     v(p,2)=-v(p,2)
                 ELSE 
-                    v(p,2)=2*vp-v(p,2)
+                    v(p,2)=2.0d00*vp-v(p,2)
                     ! print*, "collision with bottom wall"
                 END IF 
             END IF
