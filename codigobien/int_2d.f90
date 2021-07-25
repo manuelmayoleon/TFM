@@ -35,7 +35,8 @@ subroutine inicializacion2d(npart,longy,alt,temp,tempz,r,v)
     !!!! establecemos las posiciones y velocidades de las particulas  
         DO  i=1,npart
             r(i,1)=i*size-longy/2.0d0
-            r(i,2)=alt*0.5d00
+            ! r(i,2)=alt*0.5d00
+            r(i,2)=0.d00
         END DO
            
         DO i=1,npart,2 

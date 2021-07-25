@@ -44,25 +44,36 @@ implicit none
     !notar que consideramos KT=1
     !inicializamos variables
     temp=1.0d00
-    tempz=0.1*temp
-    sigma=1d00
+    tempz=0.01*temp
+    ! tempz=5.0*temp
+    sigma=1.0d00
     H=1.5*sigma
     n=500
+<<<<<<< HEAD
     rho=0.02d00
+=======
+    rho=0.03d00
+>>>>>>> 1e67a9dfc90d4e065f86186de5c07775cb9bfe4d
     epsilon=(H-sigma)/sigma
     longy=REAL(n,8)/(rho*(H-sigma))
     ! rep=550000
-    rep=1000000
+    rep=10000000
     iter=1
 
+<<<<<<< HEAD
     alpha=0.9
     vp=0.001*temp
+=======
+    ! alpha=0.90
+    alpha=1.0d00
+    vp=0.0001*temp
+>>>>>>> 1e67a9dfc90d4e065f86186de5c07775cb9bfe4d
 
     ALLOCATE(r(n,2),v(n,2),sumv(iter,rep,2),tmp(rep,2),rab(2),vab(2),colisiones(iter),tiempos(rep),deltas(rep))
 
     write ( *, '(a)' ) ' '
     write ( *, '(a)' ) '            MD 2D SIMULATION                 '
-    write ( *, '(a)' ) '            FORTRAN90 version'
+    write ( *, '(a)' ) '            FORTRAN90 version                '
     
     write ( *, '(a)' ) ' '
     write ( *, '(a,g14.6)' ) '  Temperature y axis = ', temp
@@ -90,7 +101,7 @@ implicit none
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     !pongo el numero de colisiones a cero
-    colisiones(:)=0
+    colisiones(:)=0.d00
     !inicializo el tiempo para calcular el tiempo de computo
     call cpu_time(start)
     !Abro los archivos en los que voy a gaurdar los valores de las temperaturas, velocidades, posiciones, etc...
@@ -144,8 +155,16 @@ implicit none
 
             !colision entre particula a y muro
             IF (ni(2)>n) THEN
+<<<<<<< HEAD
                 
                 CALL wall_collide(ni(1),ni(2))            
+=======
+                ! if boolean eqv false, the particle is confined between two rigid plates 
+                !else, the lower plate is vibrating in a sawtooth way 
+                ! boolean=.TRUE.
+                boolean=.FALSE.
+                CALL wall_collide(ni(1),ni(2),boolean)            
+>>>>>>> 1e67a9dfc90d4e065f86186de5c07775cb9bfe4d
             !colisiones(i)=colisiones(i)+1
             END IF
 
@@ -280,7 +299,7 @@ implicit none
 
             factor = DOT_PRODUCT ( rij, vij )
             if(granular .EQV. .TRUE.) THEN 
-                vij    = -((1+alpha)*factor * rij)/(2d00)
+                vij    = -((1.0d0+alpha)*factor * rij)/(2.0d00)
             ELSE
                 vij    = -factor * rij
             END IF

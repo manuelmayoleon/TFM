@@ -16,11 +16,12 @@ from matplotlib.transforms import (
 
 
 
-r=np.genfromtxt("pos_0.90.txt",names=["ry","rz"])
-v = np.genfromtxt("velocidad_0.90.txt", names=["vy","vz"])
+r=np.genfromtxt("pos.txt",names=["ry","rz"])
+v = np.genfromtxt("velocidad.txt", names=["vy","vz"])
+rinicial=np.genfromtxt("posiciones_init.txt",names=["ry","rz"])
 vinit=np.genfromtxt("velocidad_init.txt", names=["vy","vz"])
-temp=np.genfromtxt("temperaturas_0.90.txt" ,names= ["y","z"])
-tiempo=np.genfromtxt("tiemposdecol_0.90.txt",names=["t"])
+temp=np.genfromtxt("temperaturas.txt" ,names= ["y","z"])
+tiempo=np.genfromtxt("tiemposdecol.txt",names=["t"])
 # print(v)
 
 
@@ -80,13 +81,15 @@ plt.grid(color='k', linestyle='--', linewidth=0.5,alpha=0.2)
 plt.xlabel ( r' $t$ ', fontsize=20)
 plt.ylabel ( r' $T$ ',fontsize=20)
 plt.legend(loc=0,fontsize=20)
-plt.xlim(0,1500)
-plt.ylim(0.0,1.0)
+# plt.xlim(0,1500)
+# plt.ylim(0.0,1.0)
 
 
 ax2 = plt.subplots(1,1)
 
 plt.plot(r["ry"][0:len(r["ry"])-1],r["rz"][0:len(r["ry"])-1], "o")
+
+plt.plot(rinicial["ry"],rinicial["rz"], "o")
 # params , params_covariance = optimize.curve_fit(fit_func,corr['tau'],np.log(corr['corr']),method='dogbox')
 # print('param')
 # print (params)
@@ -97,8 +100,8 @@ plt.plot(r["ry"][0:len(r["ry"])-1],r["rz"][0:len(r["ry"])-1], "o")
 # tau=np.linspace(0,2.5,100)
 # plt.plot(corr['tau'],np.log(corr['corr']),'o')
 # # plt.plot(tau,fit_func(tau,params[0],params[1]))
-plt.xlim(-7500,7500)
-plt.ylim(0.5,1.0)
+# plt.xlim(-7500,7500)
+# plt.ylim(0.5,1.0)
 plt.xlabel ( r' $y$ ', fontsize=20)
 plt.ylabel ( r' $z$ ',fontsize=20)
 # plt.grid(color='k', linestyle='--', linewidth=0.5,alpha=0.2)
