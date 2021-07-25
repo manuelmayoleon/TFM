@@ -106,7 +106,8 @@ implicit none
                         IF( discr>0.0) THEN ! si colisiona con la sucesiva particula
                         
                             ! tcol = ( -bij - sqrt( discr )) / ( prodvij )
-                        
+                         
+                            
                             !! ALTERNATIVE WAY 
                         
                             qij=-(bij+sign(1.0d00,bij)*dsqrt(discr))    
