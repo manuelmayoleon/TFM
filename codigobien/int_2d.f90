@@ -9,7 +9,7 @@ subroutine inicializacion2d(npart,longy,alt,temp,tempz,r,v)
     implicit none
     REAL(kind = 8), EXTERNAL :: dran_u
     INTEGER::npart
-    INTEGER:: i,number,iseed
+    INTEGER:: i,number
     REAL(kind=8)::longy,alt
     REAL(kind=8),DIMENSION(npart,2):: v
     REAL(kind=8),DIMENSION(npart,2)::r
@@ -23,9 +23,7 @@ subroutine inicializacion2d(npart,longy,alt,temp,tempz,r,v)
          sumvsq=0
          sumvsqz=0
     
-    !! llamamos al generador de numeros aleatorios
-    iseed=2312
-    call dran_ini(iseed)
+ 
 
     !!!! introducimos las variables caracteristicas del sistema      
          

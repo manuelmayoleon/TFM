@@ -29,11 +29,11 @@ implicit none
     REAL(kind=8)::alpha, vp  !! coeficiente de restitucion y velocidad que se introduce a traves de la pared 
     LOGICAL :: boolean,granular
     REAL(kind=8)::tcol,colt !tiempo de colision, tiempo para comparar y tiempo inicial
-    INTEGER::rep,iter,n !numero de repeticiones que se realizan (tiempo) y numero de iteraciones  (numero de copias)
+    INTEGER::rep,iter,n,iseed !numero de repeticiones que se realizan (tiempo) y numero de iteraciones  (numero de copias)
     REAL(kind=8),ALLOCATABLE,DIMENSION(:)::rab,vab !distancias y velocidades relativas
     INTEGER,DIMENSION(2)::ni !particulas que colisionan
     INTEGER,ALLOCATABLE,DIMENSION(:)::colisiones !numero de colisiones
-    REAL(kind=8)::bij,discr,t !bij=(ri-rj)*(vi-vj), discr es el discriminante de la solucion de segundo grado, t=tiempo de colision
+    REAL(kind=8)::bij,qij,discr,t !bij=(ri-rj)*(vi-vj), discr es el discriminante de la solucion de segundo grado, t=tiempo de colision
     REAL(kind=8),ALLOCATABLE,DIMENSION(:)::tiempos,deltas !tiempos de colision
     REAL(kind=8), parameter :: pi = 4 * atan (1.0_8)
     !!! para deteminar el tiempo de cálculo
@@ -49,21 +49,20 @@ implicit none
     sigma=1.0d00
     H=1.5*sigma
     n=500
-    rho=0.02d00
+    rho=0.06d00
 
     ! rho=0.03d00
     epsilon=(H-sigma)/sigma
-    longy=REAL(n,8)/(rho*(H-sigma))
+    longy=REAL(n,8)/(rho*(H))
     ! rep=550000
-    rep=10000000
+    rep=5000000
     iter=1
 
-    alpha=0.9
+    alpha=0.95
+    ! alpha=1.0
     vp=0.001*temp
 
-    ! alpha=0.90
-    alpha=1.0d00
-    vp=0.0001*temp
+  
 
 
     ALLOCATE(r(n,2),v(n,2),sumv(iter,rep,2),tmp(rep,2),rab(2),vab(2),colisiones(iter),tiempos(rep),deltas(rep))
@@ -77,7 +76,7 @@ implicit none
     write ( *, '(a,g14.6)' ) '  Temperature z axis = ', tempz
     write ( *, '(a,i8)' ) '  number of steps = ', rep
     write ( *, '(a,i8)' ) &
-      '  The number of iterations taken is ITERATIONS = ', iter
+      '  The number of iterations taken  = ', iter
       write ( *, '(a,i8)' ) '  N = ', n
     write ( *, '(a,g14.6)' ) '  diameter (sigma) = ', sigma
     write ( *, '(a,g14.6)' ) '  density (rho) = ', rho
@@ -96,23 +95,24 @@ implicit none
 
   
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
+    !! llamamos al generador de numeros aleatorios
+    iseed=2312
+    call dran_ini(iseed)
     !pongo el numero de colisiones a cero
     colisiones(:)=0.d00
     !inicializo el tiempo para calcular el tiempo de computo
     call cpu_time(start)
     !Abro los archivos en los que voy a gaurdar los valores de las temperaturas, velocidades, posiciones, etc...
     
-    ! If granular eqv false, the particles lost energy on each collision (inelastic disks) 
+    ! If granular eqv true, the particles lost energy on each collision (inelastic disks) 
     !else, the collision is elastic between particles 
     granular=.TRUE.
     ! granular=.FALSE.
     
     ! If boolean eqv false, the particle is confined between two rigid plates 
     !else, the lower plate is vibrating in a sawtooth way 
-    ! boolean=.TRUE.
     boolean=.TRUE.
-
+    ! boolean=.FALSE.
 
     DO i=1,iter
         !inicializo los tiempos 
@@ -123,7 +123,7 @@ implicit none
         DO j=1,rep
             ni=0
             colt = HUGE(1.0)
-            DO k=1,(n-1)
+            DO k=1,n
 
                 CALL calcular_tiempo_de_colision(k)
 
@@ -309,27 +309,73 @@ implicit none
             
             
 
-            rab(:)=r(c,:)-r(c+1,:) ! calculamos posiciones relativas
-            rab(1)=rab(1)-longy*ANINT(rab(1)/(longy)) ! condiciones periodicas
-            vab(:)=v(c,:)-v(c+1,:)   !calculamos velocidades relativas
-            bij    = DOT_PRODUCT ( rab, vab )   ! obtenemos el producto escalar (ri-rj)*(vi-vj)
+            IF(c/=n) THEN    
+                rab(:)=r(c,:)-r(c+1,:) ! calculamos posiciones relativas
+                rab(1)=rab(1)-longy*ANINT(rab(1)/(longy)) ! condiciones periodicas
+                vab(:)=v(c,:)-v(c+1,:)   !calculamos velocidades relativas
+                bij    = DOT_PRODUCT ( rab, vab )   ! obtenemos el producto escalar (ri-rj)*(vi-vj)
+
+                !! FIRST WAY TO COMPUTE 
+
+                    IF (bij<0 ) THEN
+                    discr=bij**2-(SUM(rab**2)-sigma**2)*SUM(vab**2)
+                    IF( discr>0.0) THEN ! si colisiona con la sucesiva particula
+                        ! tcol = ( -bij - SQRT ( discr ) ) / ( SUM ( vab**2 ) )
+                    !! ALTERNATIVE WAY 
+                        
+                        qij=-(bij+sign(1.0d00,bij)*dsqrt(discr))    
+                        !  
+                        tcol=MIN(qij/abs(dsqrt(sum(vab**2))),(sum(rab**2)-sigma**2)/qij )
+                !comprobar que los tiempos no son negativos
+                        IF (tcol<0) THEN 
+                        PRINT*, 'colisión:',c,c+1,'tiempo',tcol
+                        END IF 
+                        
+                        IF (tcol<colt ) THEN
+                            ! PRINT*, 'colisión:',k,k+1,'tiempo',tcol
+                            colt=tcol
+                            ni(1)=c
+                            ni(2)=c+1
+                        END IF
+                    END IF
+                    END IF
+      
+            END IF
+            
+            
+            !!!!!!!!!!!!!!!! Si consideramos la partícula 1, vemos si esta colisiona con la última!!!!!!!!!!!!!!    
+            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!                    
+            IF (c==1) THEN
+                rab(:)=r(c,:)-r(n,:) ! calculamos posiciones relativas
+                rab(1)=rab(1)-longy*ANINT(rab(1)/(longy)) ! condiciones periodicas
+                vab(:)=v(c,:)-v(n,:)   !calculamos velocidades relativas
+                bij    = DOT_PRODUCT ( rab, vab )   ! obtenemos el producto escalar (ri-rj)*(vi-vj)
                 IF (bij<0 ) THEN
                 discr=bij**2-(SUM(rab**2)-sigma**2)*SUM(vab**2)
                 IF( discr>0.0) THEN ! si colisiona con la sucesiva particula
                     tcol = ( -bij - SQRT ( discr ) ) / ( SUM ( vab**2 ) )
-                        
+                    
                     !comprobar que los tiempos no son negativos
+
                     IF (tcol<0) THEN 
-                       PRINT*, 'colisión:',c,c+1,'tiempo',tcol
-                    END IF 
+                        PRINT*, 'colisión:',c,' con',n,'. Tiempo',tcol
+                    END IF  
                     
                     IF (tcol<colt ) THEN
+                        ! PRINT*, 'colisión:',k,' con',n,'. Tiempo',tcol
                         colt=tcol
                         ni(1)=c
-                        ni(2)=c+1
+                        ni(2)=n
                     END IF
                 END IF
                 END IF
+    
+    
+    
+            
+        
+        
+            END IF
 
                 
                 !!!!!!!!!!!!!!!!!!!!!!!!!!! Colisión con las paredes !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -353,9 +399,9 @@ implicit none
                 END IF
                 IF (v(c,2)<0 ) THEN
                     IF(boolean .EQV. .TRUE.) THEN 
-                        tcol=(sigma*0.5-r(k,2))/(v(k,2)-vp)
+                        tcol=(sigma*0.5-r(c,2))/(v(c,2)-vp)
                     ELSE
-                        tcol=(sigma*0.5-r(k,2))/v(k,2)
+                        tcol=(sigma*0.5-r(c,2))/v(c,2)
                     END IF
                         !comprobar que los tiempos no son negativos
                         IF (tcol<0 ) THEN 
@@ -368,38 +414,7 @@ implicit none
                         ni(2)=n+2
                         END IF
                 END IF
-                !!!!!!!!!!!!!!!! Si consideramos la partícula 1, vemos si esta colisiona con la última!!!!!!!!!!!!!!    
-                !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                IF (c==1) THEN
-                    rab(:)=r(c,:)-r(n,:) ! calculamos posiciones relativas
-                    rab(1)=rab(1)-longy*ANINT(rab(1)/(longy)) ! condiciones periodicas
-                    vab(:)=v(c,:)-v(n,:)   !calculamos velocidades relativas
-                    bij    = DOT_PRODUCT ( rab, vab )   ! obtenemos el producto escalar (ri-rj)*(vi-vj)
-                    IF (bij<0 ) THEN
-                    discr=bij**2-(SUM(rab**2)-sigma**2)*SUM(vab**2)
-                    IF( discr>0.0) THEN ! si colisiona con la sucesiva particula
-                        tcol = ( -bij - SQRT ( discr ) ) / ( SUM ( vab**2 ) )
-                        
-                        !comprobar que los tiempos no son negativos
-
-                        IF (tcol<0) THEN 
-                            PRINT*, 'colisión:',c,' con',n,'. Tiempo',tcol
-                        END IF  
-                        
-                        IF (tcol<colt ) THEN
-                            colt=tcol
-                            ni(1)=c
-                            ni(2)=n
-                        END IF
-                    END IF
-                    END IF
-        
-        
-        
                 
-            
-            
-                END IF
 
 
 
@@ -439,7 +454,7 @@ implicit none
 
         super=.FALSE. !! 1 si es falso, 0 si es verdadero
         iloop:DO q=1,n
-            IF(ABS(r(q+1,1)-r(q,1)) <( 0.95)) THEN
+            IF(ABS(r(q+1,1)-r(q,1)) <( 0.95) .AND. ABS(r(q+1,2)-r(q,2)) <( 0.95)) THEN
                 !PRINT*, 'particula ',q,'con',q+1,'superpuestas',ABS(r(q+1,1)-r(q,1))
             super=.TRUE.
             !PRINT*, 'particula',q,'distansia', ABS(r(q+1,1)-r(q,1))

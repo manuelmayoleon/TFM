@@ -16,7 +16,7 @@ implicit none
     REAL(kind=8)::temp,tempz,H,longy,sigma,epsilon,densidad !temperaturas en "y" y en "z", altura vertical y anchura, sigma==tamaño de la particula
     REAL(kind=8)::alpha !coeficiente de restitucion
     REAL(kind=8)::tcol,colt !tiempo de colision, tiempo para comparar y tiempo inicial
-    INTEGER::rep,iter,n !numero de repeticiones que se realizan (tiempo) y numero de iteraciones  (numero de copias)
+    INTEGER::rep,iter,n,iseed !numero de repeticiones que se realizan (tiempo) y numero de iteraciones  (numero de copias)
     REAL(kind=8),ALLOCATABLE,DIMENSION(:)::rab,vab !distancias y velocidades relativas
     INTEGER,DIMENSION(2)::ni !particulas que colisionan
     INTEGER,ALLOCATABLE,DIMENSION(:)::colisiones !numero de colisiones
@@ -39,7 +39,7 @@ implicit none
     epsilon=(H-sigma)/sigma
     longy=REAL(n,4)/(densidad*(H))
     rep=1000000
-    iter=1
+    iter=10
 
     alpha =0.2
 
@@ -61,6 +61,10 @@ implicit none
     ! CLOSE(9)
     ! CLOSE(10)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+       !! llamamos al generador de numeros aleatorios
+    iseed=2312
+    call dran_ini(iseed)
+
 
     !pongo el numero de colisiones a cero
     colisiones(:)=0
@@ -93,7 +97,7 @@ implicit none
                             IF (bij<0 ) THEN
                             discr=bij**2-(SUM(rab**2)-sigma**2)*SUM(vab**2)
                             IF( discr>0.0) THEN ! si colisiona con la sucesiva particula
-                                tcol = ( -bij - SQRT ( discr ) ) / ( SUM ( vab**2 ) )
+                                ! tcol = ( -bij - SQRT ( discr ) ) / ( SUM ( vab**2 ) )
                             !! ALTERNATIVE WAY 
                                 
                                 qij=-(bij+sign(1.0d00,bij)*dsqrt(discr))    
