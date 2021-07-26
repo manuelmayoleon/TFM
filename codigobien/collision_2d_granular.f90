@@ -49,25 +49,22 @@ implicit none
     sigma=1.0d00
     H=1.5*sigma
     n=500
-<<<<<<< HEAD
     rho=0.02d00
-=======
-    rho=0.03d00
->>>>>>> 1e67a9dfc90d4e065f86186de5c07775cb9bfe4d
+
+    ! rho=0.03d00
     epsilon=(H-sigma)/sigma
     longy=REAL(n,8)/(rho*(H-sigma))
     ! rep=550000
     rep=10000000
     iter=1
 
-<<<<<<< HEAD
     alpha=0.9
     vp=0.001*temp
-=======
+
     ! alpha=0.90
     alpha=1.0d00
     vp=0.0001*temp
->>>>>>> 1e67a9dfc90d4e065f86186de5c07775cb9bfe4d
+
 
     ALLOCATE(r(n,2),v(n,2),sumv(iter,rep,2),tmp(rep,2),rab(2),vab(2),colisiones(iter),tiempos(rep),deltas(rep))
 
@@ -155,16 +152,11 @@ implicit none
 
             !colision entre particula a y muro
             IF (ni(2)>n) THEN
-<<<<<<< HEAD
-                
+
                 CALL wall_collide(ni(1),ni(2))            
-=======
-                ! if boolean eqv false, the particle is confined between two rigid plates 
-                !else, the lower plate is vibrating in a sawtooth way 
-                ! boolean=.TRUE.
-                boolean=.FALSE.
-                CALL wall_collide(ni(1),ni(2),boolean)            
->>>>>>> 1e67a9dfc90d4e065f86186de5c07775cb9bfe4d
+
+                   
+
             !colisiones(i)=colisiones(i)+1
             END IF
 
