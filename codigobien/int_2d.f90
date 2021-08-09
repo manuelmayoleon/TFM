@@ -68,8 +68,8 @@ subroutine inicializacion2d(npart,longy,alt,temp,tempz,r,v)
     !!!! Escalamos las velocidades para que las temperaturas sean las deseadas
     
         DO  i=1,npart !!multiplicamos por la raiz cuadrada de la temperatura /temperatura promedio <v^2>/2=v^2/2n (para particulas con masa unidad)
-            v(i,1)=sqrt(2.0d0*dble(npart)*temp/sumvsq)*v(i,1) 
-            v(i,2)=sqrt(2.0d0*dble(npart)*tempz/sumvsqz)*v(i,2)
+            v(i,1)=sqrt(dble(npart)*temp/sumvsq)*v(i,1) 
+            v(i,2)=sqrt(dble(npart)*tempz/sumvsqz)*v(i,2)
         END DO
         
 END SUBROUTINE inicializacion2d

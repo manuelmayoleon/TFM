@@ -43,9 +43,12 @@ implicit none
 
     !notar que consideramos KT=1
     !inicializamos variables
-    temp=1.0d00
-    tempz=0.01*temp
+    ! temp=1.0d00
+    ! tempz=0.d00*temp
     ! tempz=5.0*temp
+    temp=1.d00
+    tempz=5.d00
+    
     sigma=1.0d00
     H=1.5*sigma
     n=500
@@ -53,15 +56,16 @@ implicit none
 
     ! rho=0.03d00
     epsilon=(H-sigma)/sigma
-    longy=REAL(n,8)/(rho*(H))
+    longy=REAL(n,8)/(rho*(H-sigma))
     ! rep=550000
     rep=5000000
     iter=1
 
     alpha=0.95
     ! alpha=1.0
-    vp=0.001*temp
-
+    ! vp=0.001*temp
+    vp=0.001
+    ! vp=0.0d0
   
 
 
@@ -91,7 +95,7 @@ implicit none
    
     !!!! para guardar los valores de las posiciones y velocidades iniciales!!!!!!
 
-    ! call save_initial_distribution()
+    call save_initial_distribution()
 
   
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -162,7 +166,8 @@ implicit none
 
             ! OBTENEMOS LOS VALORES DE LAS TEMPERATURA Y TIEMPO MEDIO ENTRE COLISIONES
                DO l=1,2
-                   sumv(i,j,l)=0.5d00*sum(v(:,l)**2)/n
+                !    sumv(i,j,l)=0.5d00*sum(v(:,l)**2)/n
+                sumv(i,j,l)=sum(v(:,l)**2)/n
 
                END DO
                IF (j>1) THEN
