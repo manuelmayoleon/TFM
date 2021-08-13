@@ -38,33 +38,33 @@ implicit none
     REAL(kind=8), parameter :: pi = 4 * atan (1.0_8)
     !!! para deteminar el tiempo de cálculo
     REAL(kind=4):: start, finish
-    character(len=10)::alfa
+    character(len=10)::alfa,eps
 
 
     !notar que consideramos KT=1
     !inicializamos variables
-    ! temp=1.0d00
-    ! tempz=0.d00*temp
-    ! tempz=5.0*temp
-    temp=1.d00
-    tempz=5.d00
+    temp=1.0d00
+    ! tempz=0.d001*temp
+    tempz=5.0*temp
+    ! temp=1.d00
+    ! tempz=5.d00
     
     sigma=1.0d00
     H=1.5*sigma
     n=500
-    rho=0.06d00
+    ! rho=0.06d00
 
-    ! rho=0.03d00
+    rho=0.015d00
     epsilon=(H-sigma)/sigma
     longy=REAL(n,8)/(rho*(H-sigma))
     ! rep=550000
-    rep=5000000
+    rep=30000000
     iter=1
 
     alpha=0.95
     ! alpha=1.0
     ! vp=0.001*temp
-    vp=0.001
+    vp=0.0001
     ! vp=0.0d0
   
 
@@ -92,7 +92,7 @@ implicit none
 
 
     WRITE(alfa,'(F10.2)')   alpha
-   
+    WRITE(eps,'(F10.2)')   epsilon
     !!!! para guardar los valores de las posiciones y velocidades iniciales!!!!!!
 
     call save_initial_distribution()
@@ -202,13 +202,12 @@ implicit none
         END DO
     END DO 
 
-   
  
    
     
     
 
-    OPEN(9,FILE='temperaturas_' // trim(adjustl(alfa)) // '.txt',STATUS='unknown')
+    OPEN(9,FILE='temperaturas_' // trim(adjustl(alfa)) // '_' // trim(adjustl(eps)) // '.txt',STATUS='unknown')
     DO l=1,rep
         WRITE(9,*) tmp(l,1), tmp(l,2)
     END DO 
